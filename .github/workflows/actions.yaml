@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  EKS_CLUSTER_NAME: wisecow
+  AWS_REGION: ap-south-1
+
 jobs:
 
   build-and-push:
@@ -33,10 +37,15 @@ jobs:
         docker push ranesiddhi/wisecow:${GITHUB_SHA::8}
         docker push ranesiddhi/wisecow:latest
 
-    - name: Deploy to Kubernetes
-      uses: azure/k8s-set-context@v1
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        kubeconfig: ${{ secrets.KUBECONFIG }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{env.AWS_REGION}}
+
+    - name: Update kube config
+      run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
 
     - name: Apply Kubernetes manifests
       run: |
